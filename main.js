@@ -1,5 +1,6 @@
 var util = require('utils'),
   fs = require('fs'),
+  _ = require('lodash'),
   casper = require('casper').create({
     verbose: true,
     logLevel: 'debug',
@@ -8,6 +9,7 @@ var util = require('utils'),
 
 var data = [];
 
+// Get data from the dom
 var getData = function() {
   var dataList = [],
       nodes = $('#dtree1>.dTreeNode');
@@ -20,7 +22,6 @@ var getData = function() {
     result = {
       id: childNodeId - 1,
       name: name,
-      districts: []
     };
 
     // Get children nodes (districts)
@@ -44,6 +45,7 @@ var getData = function() {
   return dataList;
 };
 
+// Remove unneccessary TTTP text
 var removeTTTP = function() {
   var i;
   for(i = 0; i < 5; i++) {
@@ -51,6 +53,21 @@ var removeTTTP = function() {
   }
 };
 
+// Create the hash object structure
+var createHash = function() {
+  var dataHash = {};
+  _.each(data, function(p) {
+    var dHash = {};
+    dataHash[p.id] = { name: p.name };
+    _.each(p.districts, function(d) {
+      dHash[d.id] = d.name;
+    });
+
+    dataHash[p.id].districts = dHash;
+  });
+
+  return dataHash;
+};
 
 casper.start('http://gis.chinhphu.vn/');
 
@@ -80,10 +97,10 @@ casper.waitForSelector('#dtree64', function() {
   removeTTTP();
 });
 
-// Write to file
+// Write o file
 casper.then(function() {
   // Dump the data to json
-  var dataStr = JSON.stringify(data);
+  var dataStr = JSON.stringify(createHash());
   fs.write('data.json', dataStr);
 });
 
